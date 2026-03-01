@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: 16.x
+  NODE_VERSION: 18.x
 
 jobs:
   typecheck:
@@ -21,3 +21,8 @@ jobs:
       - run: |
           npm install
           npm run typecheck
+      - name: Typecheck frontend
+        run: |
+          cd client
+          npm install
+          npx tsc --noEmit

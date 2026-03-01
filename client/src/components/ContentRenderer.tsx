@@ -13,13 +13,21 @@ interface RichText {
   href?: string | null;
 }
 
+interface FileObject {
+  url: string;
+}
+
 interface BlockData {
   rich_text?: RichText[];
   caption?: RichText[];
   language?: string;
   url?: string;
+  file?: FileObject;
+  external?: FileObject;
+  type?: string;
   checked?: boolean;
   color?: string;
+  icon?: { type: string; emoji?: string };
 }
 
 function renderRichText(richTexts: RichText[]): JSX.Element[] {
@@ -155,19 +163,28 @@ function renderBlock(block: NotionBlock): JSX.Element | null {
         </blockquote>
       );
 
-    case "callout":
+    case "callout": {
+      const calloutIcon = data.icon?.emoji || "💡";
       return (
         <div className="flex gap-3 bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3">
-          <span className="text-xl">{data.color === "gray_background" ? "💡" : "📌"}</span>
+          <span className="text-xl">{calloutIcon}</span>
           <div className="text-gray-200">{renderRichText(richText)}</div>
         </div>
       );
+    }
 
     case "divider":
       return <hr className="border-gray-700 my-4" />;
 
     case "image": {
-      const imageUrl = data.url || "";
+      let imageUrl = "";
+      if (data.type === "file" && data.file) {
+        imageUrl = data.file.url;
+      } else if (data.type === "external" && data.external) {
+        imageUrl = data.external.url;
+      } else if (data.url) {
+        imageUrl = data.url;
+      }
       const caption = data.caption || [];
       return (
         <figure className="mb-4">
