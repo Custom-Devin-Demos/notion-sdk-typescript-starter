@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -69,15 +69,18 @@ export function usePageBlocks(pageId: string | null) {
   useEffect(() => {
     if (!pageId) {
       setBlocks([]);
+      setError(null);
       return;
     }
+
+    setBlocks([]);
+    setLoading(true);
+    setError(null);
 
     let cancelled = false;
 
     async function fetchBlocks() {
       try {
-        setLoading(true);
-        setError(null);
         const res = await fetch(`${API_URL}/api/pages/${pageId}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: BlocksResponse = await res.json();
@@ -105,12 +108,15 @@ export function useSearch() {
   const [results, setResults] = useState<NotionPage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestRequestId = useRef(0);
 
   const search = useCallback(async (query: string) => {
     if (!query.trim()) {
       setResults([]);
       return;
     }
+
+    const requestId = ++latestRequestId.current;
 
     try {
       setLoading(true);
@@ -120,11 +126,17 @@ export function useSearch() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: SearchResponse = await res.json();
-      setResults(data.results);
+      if (requestId === latestRequestId.current) {
+        setResults(data.results);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to search");
+      if (requestId === latestRequestId.current) {
+        setError(err instanceof Error ? err.message : "Failed to search");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
