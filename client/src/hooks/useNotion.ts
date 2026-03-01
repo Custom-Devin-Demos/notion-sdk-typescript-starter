@@ -72,6 +72,8 @@ export function usePageBlocks(pageId: string | null) {
       return;
     }
 
+    let cancelled = false;
+
     async function fetchBlocks() {
       try {
         setLoading(true);
@@ -79,16 +81,21 @@ export function usePageBlocks(pageId: string | null) {
         const res = await fetch(`${API_URL}/api/pages/${pageId}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: BlocksResponse = await res.json();
-        setBlocks(data.blocks);
+        if (!cancelled) setBlocks(data.blocks);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch page blocks"
-        );
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : "Failed to fetch page blocks"
+          );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchBlocks();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pageId]);
 
   return { blocks, loading, error };

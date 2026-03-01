@@ -67,6 +67,10 @@ router.get("/search", async (req, res: Response) => {
 
     const response = await notionReq.notion!.search({
       query,
+      filter: {
+        property: "object",
+        value: "page",
+      },
       page_size: 20,
       start_cursor: cursor || undefined,
     });
