@@ -15,7 +15,10 @@ export default function SearchBar({ onSelectPage }: SearchBarProps) {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setIsOpen(false);
+      return;
+    }
 
     debounceRef.current = setTimeout(() => {
       search(query);

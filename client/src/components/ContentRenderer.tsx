@@ -232,12 +232,78 @@ interface ContentRendererProps {
   blocks: NotionBlock[];
 }
 
+interface BlockGroup {
+  type: "single" | "bulleted_list" | "numbered_list";
+  blocks: NotionBlock[];
+}
+
+function groupBlocks(blocks: NotionBlock[]): BlockGroup[] {
+  const groups: BlockGroup[] = [];
+
+  for (const block of blocks) {
+    if (block.type === "bulleted_list_item") {
+      const last = groups[groups.length - 1];
+      if (last && last.type === "bulleted_list") {
+        last.blocks.push(block);
+      } else {
+        groups.push({ type: "bulleted_list", blocks: [block] });
+      }
+    } else if (block.type === "numbered_list_item") {
+      const last = groups[groups.length - 1];
+      if (last && last.type === "numbered_list") {
+        last.blocks.push(block);
+      } else {
+        groups.push({ type: "numbered_list", blocks: [block] });
+      }
+    } else {
+      groups.push({ type: "single", blocks: [block] });
+    }
+  }
+
+  return groups;
+}
+
 export default function ContentRenderer({ blocks }: ContentRendererProps) {
+  const groups = groupBlocks(blocks);
+
   return (
     <div className="max-w-3xl">
-      {blocks.map((block) => (
-        <div key={block.id}>{renderBlock(block)}</div>
-      ))}
+      {groups.map((group) => {
+        if (group.type === "bulleted_list") {
+          return (
+            <ul key={group.blocks[0].id} className="mb-3">
+              {group.blocks.map((block) => (
+                <li
+                  key={block.id}
+                  className="text-gray-200 ml-4 list-disc mb-1"
+                >
+                  {renderRichText(
+                    getBlockData(block).rich_text || []
+                  )}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        if (group.type === "numbered_list") {
+          return (
+            <ol key={group.blocks[0].id} className="mb-3">
+              {group.blocks.map((block) => (
+                <li
+                  key={block.id}
+                  className="text-gray-200 ml-4 list-decimal mb-1"
+                >
+                  {renderRichText(
+                    getBlockData(block).rich_text || []
+                  )}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        const block = group.blocks[0];
+        return <div key={block.id}>{renderBlock(block)}</div>;
+      })}
     </div>
   );
 }
